@@ -1,10 +1,10 @@
 salesforce:
-  username: "${salesforce.username}"
+  username: "priadhikari.d7df45ca9572@agentforce.com"
   clientId: "${salesforce.clientId}"
   clientSecret: "${salesforce.clientSecret}"
 
 jms:
-  brokerUrl: "${jms.brokerUrl}"
+  brokerUrl: "tcp://localhost:61616"
   queueName: "CONTACT.ONBOARDING.Q"
   dlqName: "CONTACT.ONBOARDING.DLQ"
 

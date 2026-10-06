@@ -10,7 +10,6 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 		<set-variable value="#[uuid()]" doc:name="Generate Correlation Identifier" doc:id="da5d0e7b-4182-4b2f-acd6-98892dc91803" variableName="correlationId"/>
 		<logger level="INFO" doc:name="Log Correlation Identifier" doc:id="ba3ebd62-ae28-4bfd-9b4b-161176211a77" message='#["CORRELATION_ID_GENERATED | CorrelationId=" ++ (vars.correlationId default "NOT_AVAILABLE")]'/>
 		<try doc:name="Try" doc:id="5df4b621-8ea6-44a6-bd13-89f308a6d4d8" >
-			<flow-ref doc:name="Validate Contact Change Event" doc:id="c0ff7331-58a1-4c6e-b9c8-d29bf6e30d92" name="contact-change-event-validation-subflow" />
 			<flow-ref doc:name="Retrieve Salesforce Contact Details" doc:id="215ebc17-04ac-4261-8509-0a01e56af96f" name="contact-contact-detail-enrichment-subflow" />
 			<flow-ref doc:name="Retrieve Related Account Details" doc:id="3bb50ed1-7f18-4ef4-b657-265e5b852e06" name="contact-account-enrichment-subflow" />
 			<flow-ref doc:name="Retrieve Reports To Contact Details" doc:id="c43c81f9-29da-4d58-bb84-2c764b4ae9c1" name="contact-manager-enrichment-subflow" />
@@ -20,7 +19,7 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 			<flow-ref doc:name="Publish Contact Onboarding JMS Message" doc:id="c0434d24-1f4f-4a62-b0db-ea4462ed39c4" name="contact-jms-message-publisher-subflow" />
 			<error-handler >
 				<on-error-propagate enableNotifications="true" logException="true" doc:name="Handle Salesforce Connectivity Failure" doc:id="2a2384f7-13f7-4097-b3fe-417db19ad832" type="SALESFORCE:CONNECTIVITY">
-					<logger level="INFO" doc:name="Logger" doc:id="abcbe775-0aca-486a-82ca-e9eaf4e4cc2b" message='#["SALESFORCE_CONNECTIVITY_ERROR | CorrelationId="&#10;++&#10;(vars.correlationId default "")]'/>
+					<logger level="INFO" doc:name="Log Salesforce Connectivity Error" doc:id="abcbe775-0aca-486a-82ca-e9eaf4e4cc2b" message='#["SALESFORCE_CONNECTIVITY_ERROR | CorrelationId="&#10;++&#10;(vars.correlationId default "")]'/>
 				</on-error-propagate>
 				<on-error-propagate enableNotifications="true" logException="true" doc:name="Handle Salesforce Query Execution Error" doc:id="16f0aa5b-9f5c-4ba1-a69d-f238a0d11299" type="SALESFORCE:INVALID_INPUT">
 					<logger level="INFO" doc:name="Log Salesforce Query Execution Error" doc:id="08598888-fe8e-43e9-b383-081e448def4f" message='#["SALESFORCE_QUERY_EXECUTION_ERROR | CorrelationId="&#10;++&#10;(vars.correlationId default "")&#10;++&#10;" | ContactId="&#10;++&#10;(vars.contactId default "")&#10;++&#10;" | Error="&#10;++&#10;(error.description default "")]'/>
@@ -29,7 +28,7 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 					<logger level="INFO" doc:name="Log JMS Publication Error" doc:id="71e9d526-cafd-47e7-8bce-ea2ed71fd990" message='#["JMS_PUBLICATION_ERROR | CorrelationId="&#10;++&#10;(vars.correlationId default "")&#10;++&#10;" | ContactId="&#10;++&#10;(vars.contactId default "")]'/>
 				</on-error-propagate>
 				<on-error-propagate enableNotifications="true" logException="true" doc:name="Handle Unexpected Process API Error" doc:id="a80a1839-b4ac-4121-9006-96b187f25f3c" type="ANY">
-					<logger level="INFO" doc:name="Log Unexpected Process API Error" doc:id="47106481-7969-48c2-aa2b-2ce7a819ff08" />
+					<logger level="INFO" doc:name="Log Unexpected Process API Error" doc:id="47106481-7969-48c2-aa2b-2ce7a819ff08" message='#["UNEXPECTED_PROCESS_API_ERROR | CorrelationId="&#10;++&#10;(vars.correlationId default "")&#10;++&#10;" | ContactId="&#10;++&#10;(vars.contactId default "")&#10;++&#10;" | Error="&#10;++&#10;(error.description default "")]'/>
 				</on-error-propagate>
 			</error-handler>
 		</try>

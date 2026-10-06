@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+        http://www.mulesoft.org/schema/mule/core
+        http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/ee/core
+        http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+        http://www.mulesoft.org/schema/mule/jms
+        http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
+
+    <sub-flow name="contact-jms-payload-builder-subflow"
+              doc:id="d74af490-62d0-438a-a22f-3757758d3f58">
+
+        <ee:transform doc:name="Build Contact Onboarding JMS Payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[
+%dw 2.0
+output application/json
+
+---
+{
+    contact_sf_id: vars.contactDetails.Id,
+
+    first_name: vars.contactDetails.FirstName,
+
+    last_name: vars.contactDetails.LastName,
+
+    email: lower(vars.contactDetails.Email default ""),
+
+    phone: vars.contactDetails.Phone,
+
+    account_id: vars.contactDetails.AccountId,
+
+    job_title: vars.contactDetails.Title,
+
+    department: vars.contactDetails.Department,
+
+    reports_to_id: vars.contactDetails.ReportsToId,
+
+    account_name: vars.accountDetails.Name default "Unknown",
+
+    account_industry: vars.accountDetails.Industry,
+
+    account_type: vars.accountDetails.Type,
+
+    account_revenue: vars.accountDetails.AnnualRevenue,
+
+    account_contact_count: vars.accountContactCount,
+
+    contact_priority: vars.contactPriority,
+
+    modified_date:
+        if (vars.contactDetails.LastModifiedDate != null)
+            ((vars.contactDetails.LastModifiedDate as DateTime)
+                as String {format: "yyyy-MM-dd HH:mm:ss"})
+        else
+            null
+}
+                ]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <set-variable
+            variableName="jmsPayload"
+            value="#[payload]"
+            doc:name="Store Contact Onboarding JMS Payload"/>
+
+        <logger
+            level="INFO"
+            doc:name="Log Contact Onboarding JMS Payload"
+            message='#[write(vars.jmsPayload,"application/json")]'/>
+
+    </sub-flow>
+
+    <sub-flow name="contact-jms-message-publisher-subflow">
+
+        <until-successful
+            maxRetries="3"
+            millisBetweenRetries="5000"
+            doc:name="Retry Publish Contact Onboarding JMS Message">
+
+            <jms:publish
+                config-ref="JMS_Config"
+                destination="${jms.queueName}"
+                doc:name="Publish Contact Onboarding JMS Message">
+
+                <jms:message>
+
+                    <jms:body>
+                        <![CDATA[#[vars.jmsPayload]]]>
+                    </jms:body>
+
+                    <jms:properties>
+                        <![CDATA[
+#[
+{
+    CorrelationId: vars.correlationId,
+    ContactSfId: vars.contactDetails.Id,
+    SourceSystem: "Salesforce",
+    EventType: "ContactOnboarding"
+}
+]
+                        ]]>
+                    </jms:properties>
+
+                </jms:message>
+
+            </jms:publish>
+
+        </until-successful>
+
+        <logger
+            level="INFO"
+            doc:name="Log Successful Contact Onboarding JMS Publication"
+            message='#[
+                "CONTACT_ONBOARDING_MESSAGE_PUBLISHED | CorrelationId="
+                ++ (vars.correlationId default "")
+            ]'/>
+
+    </sub-flow>
+
+</mule>

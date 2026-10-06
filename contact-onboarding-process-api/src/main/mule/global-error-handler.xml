@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
-	<flow name="process-api-error-logging-subflow" doc:id="7378723e-e148-4ad6-8e4c-96c33dd55004" >
-		<logger level="INFO" doc:name="Log Process API Error Details" doc:id="0393db6d-2065-47f2-a162-38c66700b225" message='#["PROCESS_API_ERROR | CorrelationId="&#10;++&#10;(vars.correlationId default "")&#10;++&#10;" | ContactId="&#10;++&#10;(vars.contactId default "")&#10;++&#10;" | Error="&#10;++&#10;(error.description default "")]'/>
-	</flow>
-</mule>

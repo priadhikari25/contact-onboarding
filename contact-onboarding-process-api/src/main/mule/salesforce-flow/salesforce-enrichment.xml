@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+<sub-flow name="contact-contact-detail-enrichment-subflow" doc:id="881efb8b-c769-4933-9b7b-d15b15f5bf5f" >
+		<ee:transform doc:name="Extract Contact Identifier From Change Event" doc:id="ae125020-e7a0-4330-9edb-dcd25880dd3d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    contactId:
+        payload.data.payload.ChangeEventHeader.recordIds[0]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload.contactId]" doc:name="Store Salesforce Contact Identifier" doc:id="bc9a1031-a355-4f38-8d0e-c54083c34a7b" variableName="contactId"/>
+		<logger level="INFO" doc:name="Log Extracted Contact Identifier" doc:id="77d4a1da-3a9c-4f74-b28f-f16c09b36f10" message='#["CONTACT_ID=" ++ (vars.contactId default "NULL")]'/>
+		<until-successful maxRetries="3" doc:name="Retry Retrieve Salesforce Contact Details" doc:id="d4054acb-0da8-49a4-87eb-3551fcbc9363" millisBetweenRetries="50000">
+			<salesforce:query doc:name="Retrieve Salesforce Contact Details" doc:id="f22d21a8-1a86-4f5b-91ca-0dcea5bc4cfc" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query><![CDATA[SELECT
+Id,
+FirstName,
+LastName,
+Email,
+Phone,
+AccountId,
+Title,
+Department,
+ReportsToId,
+LastModifiedDate
+FROM Contact
+WHERE Id = ':contactId']]></salesforce:salesforce-query>
+			<salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	contactId : vars.contactId
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		</until-successful>
+		<set-variable value="#[payload[0]]" doc:name="Store Salesforce Contact Details" doc:id="a6ac149f-3353-4ee7-a871-73c947feee38" variableName="contactDetails"/>
+		<set-variable value="#[vars.contactDetails.AccountId]" doc:name="Store Related Account Identifier" doc:id="473aa619-8932-4b99-a756-d3611c9f74a3" variableName="accountId"/>
+		<set-variable value="#[vars.contactDetails.ReportsToId]" doc:name="Store Reports To Contact Identifier" doc:id="b349f174-e3e1-4451-b8ec-b6879cf42c81" variableName="reportsToId"/>
+		<logger level="INFO" doc:name="Log Contact Enrichment Results" doc:id="b63eb868-0e1e-42e4-ae0b-36563d42a541" message='#[write(vars.contactDetails,"application/json")]'/>
+	</sub-flow>
+	<sub-flow name="contact-account-enrichment-subflow" doc:id="f2660b90-48a2-4ad1-a1ab-85a64152f680" >
+		<choice doc:name="Evaluate Account Relationship Availability" doc:id="e307c893-b211-4c34-8040-dd21ecb1cd98" >
+			<when expression="#[!isEmpty(vars.accountId)]">
+				<until-successful maxRetries="3" doc:name="Retry Retrieve Related Account Details" doc:id="db4ef4ec-359f-48e1-ab90-970411c99594" millisBetweenRetries="50000">
+					<salesforce:query doc:name="Retrieve Related Account Details" doc:id="bc411b91-8421-4de0-9be6-0895f8b664cd" config-ref="Salesforce_Config">
+						<salesforce:salesforce-query><![CDATA[SELECT
+Name,
+Industry,
+Type,
+AnnualRevenue
+FROM Account
+WHERE Id = ':accountId']]></salesforce:salesforce-query>
+						<salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	accountId : vars.accountId
+}]]]></salesforce:parameters>
+					</salesforce:query>
+				</until-successful>
+				<set-variable value="#[payload[0] default {}]" doc:name="Store Related Account Details" doc:id="06c35d52-d38a-427a-98bc-32abb72a6471" variableName="accountDetails"/>
+				<logger level="INFO" doc:name="Log Retrieved Account Details" doc:id="f7cffbc6-1bd2-4ea3-a44a-c6317098225c" message='#[write(vars.accountDetails,"application/json")]'/>
+			</when>
+			<otherwise >
+				<set-variable value='#[{&#10;Name : "Unknown"&#10;}]' doc:name="Assign Default Account Information" doc:id="13cff146-97fc-4335-83e7-18cd41a79de3" variableName="accountDetails"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Log Account Enrichment Result" doc:id="428d5119-0d5f-419f-8441-98675bfdc359" message='#[write(vars.accountDetails,"application/json")]'/>
+	</sub-flow>
+	<sub-flow name="contact-manager-enrichment-subflow" doc:id="c0b48bb9-3c2d-4e45-ace0-2f190d8e1768" >
+		<choice doc:name="Evaluate Reports To Relationship Availability" doc:id="475ef556-d513-4a02-a558-4ed8605b9bd3" >
+			<when expression="#[!isEmpty(vars.reportsToId)]">
+				<until-successful maxRetries="3" doc:name="Retry Retrieve Reports To Contact Details" doc:id="307ece36-ae1d-4584-b77b-eb86e64a3d88" millisBetweenRetries="50000">
+					<salesforce:query doc:name="Retrieve Reports To Contact Details" doc:id="18658173-0e53-4b5e-948a-f66e34d07cbd" config-ref="Salesforce_Config">
+					<salesforce:salesforce-query><![CDATA[SELECT
+Id,
+Name
+FROM Contact
+WHERE Id = ':reportsToId']]></salesforce:salesforce-query>
+					<salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	reportsToId : vars.reportsToId
+}]]]></salesforce:parameters>
+				</salesforce:query>
+				</until-successful>
+				<set-variable value="#[payload[0]]" doc:name="Store Reports To Contact Details" doc:id="54e4bc98-0b00-474d-88ee-7a992fea747a" variableName="managerDetails"/>
+			</when>
+			<otherwise >
+				<set-variable value='#[{&#10;   Name : "Unassigned"&#10;}]' doc:name="Assign Default Reports To Information" doc:id="7376a59a-05a7-4f7b-bee9-4e6d9507e3c1" variableName="managerDetails"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Log Reports To Contact Enrichment Result" doc:id="eb774b05-8e50-47ce-9651-3413474ea8f1" message='#[write(vars.managerDetails,"application/json")]'/>
+	</sub-flow>
+	<sub-flow name="contact-account-contact-count-enrichment-subflow" doc:id="0d4f43fb-8821-4637-b3ca-71a41aaf8f13" >
+		<until-successful maxRetries="3" doc:name="Retry Retrieve Related Account Contact Count" doc:id="6add2de7-06be-49e8-a5fd-460e76bf7747" millisBetweenRetries="50000">
+			<salesforce:query doc:name="Retrieve Related Account Contact Count" doc:id="6b52a938-a2e8-42c0-b83a-bfb0194134bb" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query><![CDATA[SELECT Id
+FROM Contact
+WHERE AccountId = ':accountId']]></salesforce:salesforce-query>
+			<salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	
+	accountId : vars.accountId
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		</until-successful>
+		<ee:transform doc:name="Transform Message" doc:id="7cb19789-08ee-4d4b-890f-ab1e310b328d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    accountContactCount: sizeOf((payload default []) as Array)
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload.accountContactCount]" doc:name="Store Related Account Contact Count" doc:id="e0191d3b-24d2-42b1-a6fa-ca96f2f7d28b" variableName="accountContactCount"/>
+		<logger level="INFO" doc:name="Log Related Account Contact Count" doc:id="0e71d8da-1e66-46db-9c51-bce79af51c3a" message='#["ACCOUNT_CONTACT_COUNT=" ++ (vars.accountContactCount as String)]'/>
+	</sub-flow>
+</mule>

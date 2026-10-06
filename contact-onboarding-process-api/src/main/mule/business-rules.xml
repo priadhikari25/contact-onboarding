@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
-	<sub-flow name="contact-priority-calculation-subflow" doc:id="b9337717-0cb9-4185-acfb-82ec3d13831e" >
-		<set-variable value='#[if ((vars.accountDetails.AnnualRevenue default 0) &gt; 10000000)&#10;    "HIGH"&#10;else if (&#10;    !isEmpty(vars.accountDetails.Type)&#10;    and&#10;    (vars.accountDetails.Type contains "Customer")&#10;)&#10;    "MEDIUM"&#10;else&#10;    "NORMAL"]' doc:name="Calculate Contact Priority" doc:id="a116b635-d577-4b61-ba05-9f0aa3dd6011" variableName="contactPriority"/>
-	</sub-flow>
-</mule>
