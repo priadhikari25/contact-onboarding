@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="77c6f88f-251f-44fd-85f7-e7befa772c74" file="config\dev.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="edc6f381-2eb7-407d-af29-67f9073c31c8" file="secure\secure.properties" key="mulekey1234567890" />
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="24f4e1f9-1078-482a-9346-0e45a83378b4" >
+		<salesforce:basic-connection username="priadhikari.d7df45ca9572@agentforce.com" password="#Priya25" securityToken="uMuBmbUn1amCWzojovuAmzXf"/>
+	</salesforce:sfdc-config>
+</mule>

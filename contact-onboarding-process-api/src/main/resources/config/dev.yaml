@@ -1,0 +1,13 @@
+salesforce:
+  username: "${salesforce.username}"
+  clientId: "${salesforce.clientId}"
+  clientSecret: "${salesforce.clientSecret}"
+
+jms:
+  brokerUrl: "${jms.brokerUrl}"
+  queueName: "CONTACT.ONBOARDING.Q"
+  dlqName: "CONTACT.ONBOARDING.DLQ"
+
+retry:
+  maxRetries: "3"
+  retryInterval: "5000"
