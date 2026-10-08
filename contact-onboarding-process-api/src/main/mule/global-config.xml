@@ -6,16 +6,14 @@
 http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
 http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
 http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
-	<configuration-properties doc:name="Configuration properties" doc:id="77c6f88f-251f-44fd-85f7-e7befa772c74" file="config\dev.yaml" />
+	<configuration-properties doc:name="Configuration properties" doc:id="77c6f88f-251f-44fd-85f7-e7befa772c74" file="config\config-dev.yaml" />
 	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="edc6f381-2eb7-407d-af29-67f9073c31c8" file="secure\secure.properties" key="mulekey1234567890" />
 	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="24f4e1f9-1078-482a-9346-0e45a83378b4" >
 		<salesforce:basic-connection username="${salesforce.username}" password="${secure::salesforce.password}" securityToken="${secure::salesforce.securityToken}"/>
 	</salesforce:sfdc-config>
 	<jms:config name="JMS_Config" doc:name="JMS Config" doc:id="34011063-b088-4336-9de7-43f25e81e070" >
-		<jms:active-mq-connection username="${secure::jms.username}" password="${secure::jms.password}" specification="JMS_1_0_2b">
-			<jms:caching-strategy >
-				<jms:no-caching />
-			</jms:caching-strategy>
+		<jms:active-mq-connection username="${secure::jms.username}" password="${secure::jms.password}">
+			<jms:factory-configuration brokerUrl="${jms.brokerUrl}" initialRedeliveryDelay="100" redeliveryDelay="100"/>
 		</jms:active-mq-connection>
 	</jms:config>
 </mule>

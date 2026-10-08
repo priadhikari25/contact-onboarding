@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<flow name="contact-cdc-listenerFlow" doc:id="21edc630-0016-4fb4-ab52-327f672541e7" >
+		<salesforce:subscribe-channel-listener doc:name="Contact CDC Event Listener" doc:id="4c9f8f91-955c-47b3-b093-77c8446a5537" config-ref="Salesforce_Config" streamingChannel="/data/ContactChangeEvent"/>
+		<set-variable value="#[uuid()]" doc:name="Generate Correlation Identifier" doc:id="89c5459c-4fc4-4472-97a1-c29067c61968" variableName="correlationId" />
+		<logger level="INFO" doc:name="Log Complete Contact CDC Event Payload" doc:id="26a7b6b3-fb4a-46b0-a757-63c4a6da4504" message='#[write(payload,"application/json")]'/>
+		<logger level="INFO" doc:name="Log Correlation Identifier" doc:id="76c4adf7-9a6a-45b0-bc8d-ac37825d24bf" message='#["CORRELATION_ID_GENERATED | CorrelationId=" ++ (vars.correlationId default "NOT_AVAILABLE")]'/>
+		<flow-ref doc:name="Retrieve Salesforce Contact Details" doc:id="79e99eef-55bb-4b3d-b4dc-8b63b3247f70" name="contact-contact-detail-enrichment-subflow" />
+		<flow-ref doc:name="Retrieve Related Account Details" doc:id="51bde9b6-3d0b-4e5d-ae8d-4620d5748f98" name="contact-account-enrichment-subflow" />
+		<flow-ref doc:name="Retrieve Reports To Contact Details" doc:id="22254ef1-4c03-4b3f-b749-d563fb08561d" name="contact-manager-enrichment-subflow" />
+		<flow-ref doc:name="Retrieve Related Account Contact Count" doc:id="da33d047-310d-4c07-973c-ea8948442f1c" name="contact-account-contact-count-enrichment-subflow" />
+		<flow-ref doc:name="Calculate Contact Priority" doc:id="6e782c6b-df67-47d0-843d-81c64b1257c0" name="contact-priority-calculation-subflow" />
+		<flow-ref doc:name="Build Contact Onboarding JMS Payload" doc:id="77a761d3-c1d9-45e3-a96f-386020d08ea3" name="contact-jms-payload-builder-subflow" />
+		<flow-ref doc:name="Publish Contact Onboarding JMS Message" doc:id="ceedaf89-7adf-4f37-9c5f-42b654dd30d8" name="contact-jms-message-publisher-subflow" />
+		
+			<error-handler>
+			<!-- Validation Failures: Log error (or call contact-jms-message-publisher-subflow if required) -->
+			<on-error-continue type="MULE:VALIDATION" doc:name="Handle Validation Error">
+				<logger level="ERROR" doc:name="Log Validation Error" message='#["PROCESS_VALIDATION_FAILED | ContactId=" ++ (vars.contactId default "UNKNOWN") ++ " | Error=" ++ error.description]'/>
+			</on-error-continue>
+
+			<!-- DataWeave Expression Errors -->
+			<on-error-propagate type="MULE:EXPRESSION" doc:name="Handle Expression Error">
+				<logger level="ERROR" doc:name="Log Expression Error" message='#["PROCESS_EXPRESSION_ERROR | ContactId=" ++ (vars.contactId default "UNKNOWN") ++ " | Error=" ++ error.description]'/>
+			</on-error-propagate>
+
+			<!-- Connectivity Errors (Salesforce / ActiveMQ connectivity issues) -->
+			<on-error-propagate type="MULE:CONNECTIVITY" doc:name="Handle Connectivity Error">
+				<logger level="ERROR" doc:name="Log Connectivity Error" message='#["PROCESS_CONNECTIVITY_ERROR | ContactId=" ++ (vars.contactId default "UNKNOWN") ++ " | Error=" ++ error.description]'/>
+			</on-error-propagate>
+
+			<!-- Unexpected Errors -->
+			<on-error-propagate type="ANY" doc:name="Handle Unexpected Error">
+				<logger level="ERROR" doc:name="Log Unexpected Error" message='#["PROCESS_UNEXPECTED_ERROR | ContactId=" ++ (vars.contactId default "UNKNOWN") ++ " | Error=" ++ error.description]'/>
+			</on-error-propagate>
+		</error-handler>
+			
+			
+		
+	</flow>
+</mule>

@@ -8,6 +8,6 @@ jms:
   queueName: "CONTACT.ONBOARDING.Q"
   dlqName: "CONTACT.ONBOARDING.DLQ"
 
-retry:
+app:
   maxRetries: "3"
   retryInterval: "5000"
